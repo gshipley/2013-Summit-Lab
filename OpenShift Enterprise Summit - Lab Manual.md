@@ -6,7 +6,7 @@ Date:   May, 2013
 
 1. **Overview of OpenShift Enterprise**
 2. **Installing OpenShift Enterprise**
-3. **Adding Users**
+3. **Adding Districts**
 4.  **Managing Resources**
 5.  **Adding Cartridges**
 6. **Installing the RHC client tools**
@@ -63,7 +63,7 @@ What does this mean? This means that in order to take advantage of OpenShift Ent
 
 #**Lab Environment**
 
-###Login to Wrokstation
+###Login to Workstation
 Workstation User: **lab4**
 Workstation Password: **lab4**
 
@@ -86,84 +86,129 @@ The IP details for the VMs:
 
 <!--BREAK-->
 
-#**Lab 3: Adding Users**
+#**Lab 3: Managing districts (Estimated time: 10 minutes)**
 
 **Server used:**
 
+* node host
 * broker host
 
 **Tools used:**
 
 * text editor
-* cat
-* echo
-* environment variables
-* pushd
-* semodule
-* htpasswd
-* mongo
-* bundler
-* chkconfig
-* service
+* oo-admin-ctl-district
+
+Districts define a set of node hosts within which gears can be easily moved to load-balance the resource usage of those nodes. While not required for a basic OpenShift Enterprise installation, districts provide several administrative benefits and their use is recommended.
+
+Districts allow a gear to maintain the same UUID (and related IP addresses, MCS levels and ports) across any node within the district, so that applications continue to function normally when moved between nodes on the same district. All nodes within a district have the same profile, meaning that all the gears on those nodes are the same size (for example small or medium). There is a hard limit of 6000 gears per district.
+
+This means, for example, that developers who hard-code environment settings into their applications instead of using environment variables will not experience problems due to gear migrations between nodes. The application continues to function normally because exactly the same environment is reserved for the gear on every node in the district. This saves developers and administrators time and effort. 
+
+##**Enabling districts**
+
+To use districts, the broker’s MCollective plugin must be configured to enable districts.  Edit the */etc/openshift/plugins.d/openshift-origin-msg-broker-mcollective.conf* configuration file and confirm the following parameters are set:
+
+**Note: Confirm the following on the broker host.**
+
+	DISTRICTS_ENABLED=true
+	NODE_PROFILE_ENABLED=true
+
+##**Creating and populating districts**
+
+To create a district that will support a gear type of small, we will use the *oo-admin-ctl-district* command.  After defining the district, we can add our node host (node.example.com) as the only node in that district.  Execute the following commands to create a district named small_district which can only hold *small* gear types:
+
+**Note: Execute the following on the broker host.**
+
+	# oo-admin-ctl-district -c create -n small_district -p small
 	
-OpenShift Enterprise uses a plugin system for core system components such as DNS, authentication, and messaging.  In order to make use of these plugins, we need to configure them and provide the correct configuration items to ensure that they work correctly.  The plugin configuration files are located in the */etc/openshift/plugins.d* directory.  We will be working with several of these files so it is suggested that you change to that directory to complete the steps in this lab.
+If the command was successful, you should see output similar to the following:
 
-	# cd /etc/openshift/plugins.d
+	Successfully created district: 513b50508f9f44aeb90090f19d2fd940
 	
-Once you are in this directory, you will see that OpenShift Enterprise provides several example configuration files for you to use to speed up the process of configuring these plugins.  You should see three example files.
+	{"name"=>"small_district",
+	 "externally_reserved_uids_size"=>0,
+	 "active_server_identities_size"=>0,
+	 "node_profile"=>"small",
+	 "max_uid"=>6999,
+	 "creation_time"=>"2013-01-15T17:18:28-05:00",
+	 "max_capacity"=>6000,
+	 "server_identities"=>{},
+	 "uuid"=>"513b50508f9f44aeb90090f19d2fd940",
+	 "available_uids"=>"<6000 uids hidden>",
+	 "available_capacity"=>6000}
 
-* openshift-origin-auth-remote-user.conf.example
-* openshift-origin-dns-bind.conf.example
-* openshift-origin-msg-broker-mcollective.conf.example
+If you are familiar with JSON, you will understand the format of this output.  What actually happened is a new document was created in the MongoDB database that we installed in a previous lab.  To view this document inside of the database, execute the following:
 
-##**Creating configuration files from examples**
+	# mongo
 
-Let’s begin by copying the .example files to actual configuration files that will be used by OpenShift Enterprise.
+This will drop you into the mongo shell where you can perform commands against the database.  The first thing we need to do is let MongoDB know which database we want to use:
 
-	# cp openshift-origin-auth-remote-user.conf.example openshift-origin-auth-remote-user.conf
-
-The broker application will check the plugins.d directory for files ending in .conf.  The presence of .conf file enables the corresponding plug-in.  Thus, for example, copying the openshift-origin-auth-remote-user.conf.example file to openshift-origin-auth-remote-user.conf enables the auth-remote-user plug-in.
-
-
-##**Configuring an authentication plugin**
-
-OpenShift Enterprise supports various different authentication systems for authorizing a user.  In a production environment, you will probably want to use LDAP, kerberos, or some other enterprise class authorization and authentication system.  However, for this lab we will use a system called Basic Auth which relies on a *htpasswd* file to configure authentication.  OpenShift Enterprise provides three example authentication configuration files in the */var/www/openshift/broker/httpd/conf.d/* directory.
-
- Authentication Type | Description|
-| :---------------  | :------------ |
-| Basic Auth | openshift-origin-auth-remote-user-basic.conf.sample | 
-| Kerberos | openshift-origin-auth-remote-user-kerberos.conf.sample | 
-| LDAP | openshift-origin-auth-remote-user-ldap.conf.sample | 
-[Authentication Sample Files][section-mmd-tables-table1] 
-
-Since we will be using Basic Auth, we need to copy the sample configuration file to the actual configuration file:
-
-	# cp /var/www/openshift/broker/httpd/conf.d/openshift-origin-auth-remote-user-basic.conf.sample /var/www/openshift/broker/httpd/conf.d/openshift-origin-auth-remote-user.conf 
+	> show dbs
+	> use openshift_broker_dev
 	
-This configuration file specifies that the *AuthUserFile* is located at */etc/openshift/htpasswd*.  At this point, that file doesn’t exist, so we need to create it and add a user named *demo*.
-
-	# htpasswd -c /etc/openshift/htpasswd demo
+To list all of the available collections in the *openshift_broker_dev* database, you can issue the following command:
+ 
+	> db.getCollectionNames()
 	
-**Note: The -c option to htpasswd creates a new file, overwriting any existing htpasswd file.  If your intention is to add a new user to an existing  htpasswd file, simply drop the -c option.**
+You should see the following collections returned:
 
-After entering the above command, you will be prompted for a password for the user *demo*.  Once you have provided that password, view the contents of the htpasswd file to ensure that the user was added correctly.  Make a note of the password as we will using it during later labs.
-
-	# cat /etc/openshift/htpasswd
-
-If the operation was a success, you should see output similar to the following:
-
-	demo:$apr1$Q7yO3MF7$rmSZ7SI.vITfEiLtkKSMZ/
-
-##**Verify RESTful API**
-
-In order to verify that the RESTful API is functioning for the broker host, you can use the following *curl* command:
-
-	$ curl -k -udemo:password https://broker.example.com/broker/rest/api
+	[ "district", "system.indexes", "system.users", "user" ]
 	
-You see the following output:
+We can now query the *district* collection to verify the creation of our small district:
 
-	{"status":"ok","data":{"GET_ENVIRONMENT":{"href":"https://broker.example.com/broker/rest/environment","method":"GET","rel":"Get environment information","optional_params":[],"required_params":[]},"LIST_DOMAINS":{"href":"https://broker.example.com/broker/rest/domains","method":"GET","rel":"List domains","optional_params":[],"required_params":[]},"LIST_CARTRIDGES":{"href":"https://broker.example.com/broker/rest/cartridges","method":"GET","rel":"List cartridges","optional_params":[],"required_params":[]},"API":{"href":"https://broker.example.com/broker/rest/api","method":"GET","rel":"API entry point","optional_params":[],"required_params":[]},"GET_USER":{"href":"https://broker.example.com/broker/rest/user","method":"GET","rel":"Get user information","optional_params":[],"required_params":[]},"ADD_DOMAIN":{"href":"https://broker.example.com/broker/rest/domains","method":"POST","rel":"Create new domain","optional_params":[],"required_params":[{"valid_options":[],"invalid_options":[],"description":"Name of the domain","type":"string","name":"id"}]},"LIST_TEMPLATES":{"href":"https://broker.example.com/broker/rest/application_templates","method":"GET","rel":"List application templates","optional_params":[],"required_params":[]},"LIST_ESTIMATES":{"href":"https://broker.example.com/broker/rest/estimates","method":"GET","rel":"List available estimates","optional_params":[],"required_params":[]}},"type":"links","messages":[],"version":"1.2","supported_api_versions":[1.0,1.1,1.2]}
+	> db.district.find()
+	
+The output should be:
 
+	{ "_id" : "513b50508f9f44aeb90090f19d2fd940", "name" : "small_district", "externally_reserved_uids_size" : 0, 
+	"active_server_identities_size" : 0, "node_profile" : "small", "max_uid" : 6999, "creation_time" : 
+	"2013-01-15T17:18:28-05:00", "max_capacity" : 6000, "server_identities" : [ ], "uuid" : 
+	"513b50508f9f44aeb90090f19d2fd940", "available_uids" : [ 	1000, .........], , "available_capacity" : 6000 }
+
+**Note:** The *server_identities* array does not contain any data yet.
+
+Exit the Mongo shell by using the exit command:
+
+	> exit
+
+Now we can add our node host, node.example.com, to the *small_district* that we created above:
+
+	# oo-admin-ctl-district -c add-node -n small_district -i node.example.com
+	
+You should see the following output:
+
+	Success!
+	
+	{"available_capacity"=>6000,
+	 "creation_time"=>"2013-01-15T17:18:28-05:00",
+	 "available_uids"=>"<6000 uids hidden>",
+	 "node_profile"=>"small",
+	 "uuid"=>"513b50508f9f44aeb90090f19d2fd940",
+	 "externally_reserved_uids_size"=>0,
+	 "server_identities"=>{"node.example.com"=>{"active"=>true}},
+	 "name"=>"small_district",
+	 "max_capacity"=>6000,
+	 "max_uid"=>6999,
+	 "active_server_identities_size"=>1}
+	 
+
+Repeat the steps above to query the database for information about districts.  Notice that the *server_identities* array now contains the following information:
+
+	"server_identities" : [ { "name" : "node.example.com", "active" : true } ]
+	
+If you continued to add additional nodes to this district, the *server_identities* array would show all the node hosts that are assigned to the district.
+
+OpenShift Enterprise also provides a command line tool to display information about a district.  Simply enter the following command to view the JSON information that is stored in the MongoDB database:
+
+	# oo-admin-ctl-district
+
+##**Managing district capacity**
+
+Districts and node hosts have a configured capacity for the number of gears allowed. For a node host, the default values configured in */etc/openshift/resource_limits.conf* are: 
+
+* Maximum number of application per node : 100
+* Maximum number of active applications per node : 100	
+	 
 **Lab 3 Complete!**
 <!--BREAK-->
 #**Lab 4: Managing resources**
@@ -190,7 +235,7 @@ The *DEFAULT_GEAR_SIZE* setting is the size of gear that a newly created user ha
 
 Take a look at the  */etc/openshift/broker.conf* configuration file to determine the current settings for your installation:
 
-**Note:** Execute the following on the broker host.
+**Note:  Execute the following on the broker host.**
 
 	# cat /etc/openshift/broker.conf
 
@@ -202,9 +247,13 @@ When changing the */etc/openshift/broker.conf* configuration file, keep in mind 
 
 There are often times when you want to increase or decrease the number of gears a particular user can consume without modifying the setting for all existing users.  OpenShift Enterprise provides a command that will allow the administrator to configure settings for an individual user.  To see all of the available options that can be performed on a specific user, enter the following command:
 
+**Note:  Execute the following on the broker host.**
+
 	# oo-admin-ctl-user
 	
 To see how many gears that our *demo* user has consumed as well as how many gears the *demo* user has access to create, you can provide the following switches to the *oo-admin-ctl-user* command:
+
+**Note:  Execute the following on the broker host.**
 
 	# oo-admin-ctl-user -l demo
 	
@@ -216,6 +265,8 @@ Given the current state of our configuration for this training class, you should
         gear sizes: small
         
 In order to change the number of gears that our *demo* user has permission to create, you can pass the --setmaxgears switch to the command.  For instance, if we only want to allow the *demo* user to be able to create 25 gears, we would use the following command:
+
+**Note:  Execute the following on the broker host.**
 
 	# oo-admin-ctl-user -l demo --setmaxgears 25
 	
@@ -230,6 +281,8 @@ After entering the above command, you should see the following output:
 ##**Setting the type of gears a specific user can create**
 
 In a production environment, a system administrator will typically have different gear sizes that are available for developers to consume.  For this lab, we will only create small gears.  However, to add the ability to create medium size gears for the *demo* user, you can pass the -addgearsize switch to the *oo-admin-ctl-user* command.  
+
+**Note:  Execute the following on the broker host.**
 
 	# oo-admin-ctl-user -l demo --addgearsize medium
 
@@ -292,13 +345,19 @@ The only required cartridge is the openshift-origin-cartridge-cron-1.4 package.
 
 Let’s start by installing the cron package, which is required for all OpenShift Enterprise deployments.
 
+**Note:  Execute the following on the node host.**
+
 	# yum install openshift-origin-cartridge-cron-1.4
 	
 For this lab, let’s also assume that we want to only allow scalable PHP applications that can connect to MySQL on our OpenShift Enterprise deployment.  Issue the following command to install the required cartridges:
 
+**Note:  Execute the following on the node host.**
+
 	# yum install openshift-origin-cartridge-haproxy-1.4 openshift-origin-cartridge-php-5.3 openshift-origin-cartridge-mysql-5.1
 
 For a complete list of all cartridges that you are entitled to install,  you can perform a search using the yum command that will output all OpenShift Enterprise cartridges.
+
+**Note:  Execute the following on the node host.**
 
 	# yum search origin-cartridge
 	
@@ -306,6 +365,8 @@ For a complete list of all cartridges that you are entitled to install,  you can
 ##**Starting required services on the node host**
 
 The node host will need to allow HTTP, HTTPS, and SSH traffic to flow through the firewall.  We also want to ensure that the httpd, network, and sshd services are set to start on boot.
+
+**Note:  Execute the following on the node host.**
 
 	# lokkit --service=ssh
 	# lokkit --service=https
@@ -345,7 +406,7 @@ The most recent version of the OpenShift Enterprise client tools are available a
 
 With the repository in place, you can now install the OpenShift Enterprise client tools by running the following command:
 
-	$ sudo yum install rubygem-rhc
+	$ sudo yum install rhc
 
 **Lab 6 Complete!**
 
@@ -552,6 +613,13 @@ You will also notice the following three directories:
 * git - Your private git repository that was created upon gear creation.
 * php-5.3 - The core PHP runtime and associated configuration files.  Your application is served from this directory.
 
+
+For a more human readable format, you can execute the following command on the node host:
+
+	$ cd /var/lib/openshift/.httpd.d
+	$ ls
+	
+	
 ##**Understanding directory structure on the localhost**
 
 When you created the PHP application using the *rhc app create* command, the private git repository that was created on your node host was cloned to your local machine.
@@ -641,7 +709,11 @@ The php directory is where all of the application code that the developer writes
 
 ##**Make a change to the PHP application and deploy updated code**
 
-To get a good understanding of the development workflow for a user, let’s change the contents of the *index.php* template that is provided on the newly created gear.  Edit the file and look for the following code block:
+To get a good understanding of the development workflow for a user, let’s change the contents of the *index.php* template that is provided on the newly created gear.  
+
+	$ cd ~/ose/firstphp/php
+	
+Edit the file and look for the following code block:
 
 	<h1>
 	    Welcome to OpenShift
@@ -658,6 +730,8 @@ Once the code has been changed, we need to commit our change to the local git re
 
 	$ git commit -am “Changed welcome message.”
 	
+If you see an error message stating that you need to set global.{username,email}, you can ignore the message.
+
 Now that our code has been committed to our local repository, we need to push those changes up to our repository that is located on the node host.  
 
 	$ git push
@@ -832,6 +906,8 @@ From your locally cloned Git repository, create a *disable autoscaling* marker, 
 	
 To add a new gear to your application, SSH to your application gear with the following command replacing the contents with the correct information for your application.
 
+**Note: To get a list of all your application that you can ssh into, you can run the *rhc domain show* command.**
+
 	$ ssh [AppUUID]@[AppName]-[DomainName].example.com
 
 Once you have have been authenticated to your application gear, you can add a new gear with the following command:
@@ -909,7 +985,7 @@ OpenShift Enterprise provides a dashboard that will give users relevant informat
 
 **Server used:**
 
-* localhost
+* rhc client host
 * node host
 
 **Tools used:**
