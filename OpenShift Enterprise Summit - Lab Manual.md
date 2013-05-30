@@ -307,6 +307,7 @@ In order to remove the ability for a user to create a specific gear size, you ca
 **Server used:**
 
 * node host
+* broker host
 
 **Tools used:**
 
@@ -375,6 +376,15 @@ The node host will need to allow HTTP, HTTPS, and SSH traffic to flow through th
 	# chkconfig network on
 	# chkconfig sshd on
 
+##**Clearing the cartridge cache**
+
+If a newly installed cartridge is not immediately available, it may be due to an outdated, cached cartridge list. The first time the REST API is accessed, the broker host uses MCollective to retrieve the list of available cartridges from a node host. By default, this list is cached for six hours in a production environment. If the installed cartridges are modified, the cache must be cleared either manually or by waiting until the cache expires before developers can access the updated list.
+Use the commands shown below to manually clear the cache on a broker host.
+
+**Note:  Execute the following on the broker host.**
+
+	# cd /var/www/openshift/broker
+	# bundle exec rake tmp:clear
 
 **Lab 5 Complete!**
 <!--BREAK-->
