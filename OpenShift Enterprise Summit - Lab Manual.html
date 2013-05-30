@@ -353,6 +353,7 @@ User demo:
 
 <ul>
 <li>node host</li>
+<li>broker host</li>
 </ul>
 
 <p><strong>Tools used:</strong></p>
@@ -429,6 +430,17 @@ User demo:
 # chkconfig httpd on
 # chkconfig network on
 # chkconfig sshd on
+</code></pre>
+
+<h2><strong>Clearing the cartridge cache</strong></h2>
+
+<p>If a newly installed cartridge is not immediately available, it may be due to an outdated, cached cartridge list. The first time the REST API is accessed, the broker host uses MCollective to retrieve the list of available cartridges from a node host. By default, this list is cached for six hours in a production environment. If the installed cartridges are modified, the cache must be cleared either manually or by waiting until the cache expires before developers can access the updated list.
+Use the commands shown below to manually clear the cache on a broker host.</p>
+
+<p><strong>Note: Execute the following on the broker host.</strong></p>
+
+<pre><code># cd /var/www/openshift/broker
+# bundle exec rake tmp:clear
 </code></pre>
 
 <p><strong>Lab 5 Complete!</strong>
