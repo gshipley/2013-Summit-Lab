@@ -2,8 +2,6 @@ Title:  OpenShift Enterprise Summit - Lab Manual
 Author: Grant Shipley  
 Date:   May, 2013
 
-![](http://training.runcloudrun.com/images/OpenShift-summitlab-cover.png)
-<!--BREAK-->
 
 #**Contents**#
 
@@ -1399,6 +1397,6 @@ Given the number of available quick starts, you may have to use the search funct
 
 ![](http://training.runcloudrun.com/images/quickstart.png)
 
-**Lab 31 Complete!**
+**Lab 11 Complete!**
 <!--BREAK-->
 
