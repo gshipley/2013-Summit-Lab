@@ -31,7 +31,7 @@
 
 <p>This lab manual assumes that you are attending the Red Hat Summit Lab Session and that you will be using this lab manual in conjunction with the workshop. </p>
 
-<p>It is also assumed that you have been granted access to two Red Hat Enterprise Linux servers with which to perform the exercises in this lab manual. If you do not have access to your servers, please notify the session leaders.</p>
+<p>It is also assumed that you have been granted access to a Red Hat Enterprise Linux workstation which has three Red Hat Enterprise Linux Virtual Machines with which to perform the exercises in this lab manual. If you do not have access to your servers, please notify the session leaders.</p>
 
 <p>A working knowledge of SSH, git, and yum, and familiarity with a Linux-based text editor are assumed. If you do not have an understanding of any of these technologies, please let the session leaders know.</p>
 
@@ -43,7 +43,7 @@
 
 <p>Platform as a Service is changing the way developers approach developing software. Developers typically use a local sandbox with their preferred application server and only deploy locally on that instance. Developers typically start JBoss locally using the startup.sh command and drop their .war or .ear file in the deployment directory and they are done. Developers have a hard time understanding why deploying to the production infrastructure is such a time consuming process.</p>
 
-<p>System Administrators understand the complexity of not only deploying the code, but procuring, provisioning and maintaining a production level system. They need to stay up to date on the latest security patches and errata, ensure the firewall is properly configured, maintain a consistent and reliable backup and restore plan, monitor the application and servers for CPU load, disk IO, HTTP requests, etc.</p>
+<p>System Administrators understand the complexity of not only deploying the code, but procuring, provisioning, and maintaining a production level system. They need to stay up to date on the latest security patches and errata, ensure the firewall is properly configured, maintain a consistent and reliable backup and restore plan, monitor the application and servers for CPU load, disk IO, HTTP requests, etc.</p>
 
 <p>OpenShift Enterprise provides developers and IT organizations an auto-scaling cloud application platform for quickly deploying new applications on secure and scalable resources with minimal configuration and management headaches. This means increased developer productivity and a faster pace in which IT can support innovation.</p>
 
@@ -69,17 +69,18 @@
 <p><strong>Tools used:</strong></p>
 
 <ul>
-<li>TBD</li>
+<li>pre positioned scripts (install_broker, install_node, openshift.sh)</li>
+<li>virt-manager, ssh, gnome-term, ls, less</li>
 </ul>
 
 <h1><strong>Lab Environment</strong></h1>
 
-<h3>Login to Workstation</h3>
+<h2><strong>2.1 Login to Workstation</strong></h2>
 
 <p>Workstation User: <strong>lab4</strong>
 Workstation Password: <strong>lab4</strong></p>
 
-<h3>Start 3 VMs</h3>
+<h2><strong>2.2 Start 3 VMs</strong></h2>
 
 <p>Use <em>Virtual Machine Manager (virt-manager)</em></p>
 
@@ -88,14 +89,59 @@ Workstation Password: <strong>lab4</strong></p>
 * ose-node-working
 * ose-client-working</p>
 
-<h3>Login into VMs</h3>
+<h2><strong>2.3 Login into VMs</strong></h2>
 
-<p>VM&#8217;s root passwords are <strong>redhat</strong></p>
+<p>The root passwords for the virtual machines that you have been granted access to are <strong>redhat</strong>.</p>
 
-<p>The IP details for the VMs:
-* broker.example.com - <em>192.169.122.251</em>
-* node.example.com - <em>192.169.122.252</em>
-* client.example.com - <em>192.169.122.253</em></p>
+<p>The IP details for the VMs:</p>
+
+<ul>
+<li>broker.example.com - <em>192.168.122.251</em></li>
+<li>node.example.com - <em>192.168.122.252</em></li>
+<li>client.example.com - <em>192.168.122.253</em></li>
+</ul>
+
+<h2><strong>2.4 Install Broker host</strong></h2>
+
+<p>Perform the following on the broker VM.</p>
+
+<p>After optionally viewing the openshift.sh script, view then execute the install_broker script</p>
+
+<h1>less openshift.sh</h1>
+
+<h1>less install_broker</h1>
+
+<h1>./install_broker</h1>
+
+<p>While the script is executing watch for any errors. The output of the openshift.sh has been logged. Review the log.</p>
+
+<h1>less openshift.install.broker.log</h1>
+
+<p>When satisfied that all went as expect, reboot. Else ask for assistance from the session leaders.</p>
+
+<h1>reboot</h1>
+
+<h2><strong>2.5 Install Node host</strong></h2>
+
+<p>Perform the following on the broker VM.</p>
+
+<p>After optionally viewing the openshift.sh script, view then execute the install_node script</p>
+
+<h1>less openshift.sh</h1>
+
+<h1>less install_node</h1>
+
+<h1>./install_node</h1>
+
+<p>While the script is executing watch for any errors. The output of the openshift.sh has been logged. Review the log.</p>
+
+<h1>less openshift.install.node.log</h1>
+
+<p>When satisfied that all went as expect, reboot. Else ask for assistance from the session leaders.</p>
+
+<h1>reboot</h1>
+
+<p><strong>Lab 2 Complete!</strong></p>
 
 <!--BREAK-->
 
@@ -159,7 +205,9 @@ NODE_PROFILE_ENABLED=true
 
 <p>If you are familiar with JSON, you will understand the format of this output. What actually happened is a new document was created in the MongoDB database that we installed in a previous lab. To view this document inside of the database, execute the following:</p>
 
-<pre><code># mongo
+<p><strong>Note: In order to find the mongodb password, please take a look at the /etc/openshift/broker.conf file</strong></p>
+
+<pre><code># mongo openshift_broker -uopenshift -pmongopass
 </code></pre>
 
 <p>This will drop you into the mongo shell where you can perform commands against the database. The first thing we need to do is let MongoDB know which database we want to use:</p>
@@ -397,18 +445,11 @@ User demo:
 
 <p><strong>Note: If you are installing a multi-node configuration, it is important to remember that each node host <em>must</em> have the same cartridges installed.</strong></p>
 
-<p>Let’s start by installing the cron package, which is required for all OpenShift Enterprise deployments.</p>
-
-<p><strong>Note: Execute the following on the node host.</strong></p>
-
-<pre><code># yum install openshift-origin-cartridge-cron-1.4
-</code></pre>
-
 <p>For this lab, let’s also assume that we want to only allow scalable PHP applications that can connect to MySQL on our OpenShift Enterprise deployment. Issue the following command to install the required cartridges:</p>
 
 <p><strong>Note: Execute the following on the node host.</strong></p>
 
-<pre><code># yum install openshift-origin-cartridge-haproxy-1.4 openshift-origin-cartridge-php-5.3 openshift-origin-cartridge-mysql-5.1
+<pre><code># yum install openshift-origin-cartridge-php-5.3 openshift-origin-cartridge-mysql-5.1
 </code></pre>
 
 <p>For a complete list of all cartridges that you are entitled to install, you can perform a search using the yum command that will output all OpenShift Enterprise cartridges.</p>
@@ -416,20 +457,6 @@ User demo:
 <p><strong>Note: Execute the following on the node host.</strong></p>
 
 <pre><code># yum search origin-cartridge
-</code></pre>
-
-<h2><strong>Starting required services on the node host</strong></h2>
-
-<p>The node host will need to allow HTTP, HTTPS, and SSH traffic to flow through the firewall. We also want to ensure that the httpd, network, and sshd services are set to start on boot.</p>
-
-<p><strong>Note: Execute the following on the node host.</strong></p>
-
-<pre><code># lokkit --service=ssh
-# lokkit --service=https
-# lokkit --service=http
-# chkconfig httpd on
-# chkconfig network on
-# chkconfig sshd on
 </code></pre>
 
 <h2><strong>Clearing the cartridge cache</strong></h2>
@@ -451,7 +478,7 @@ Use the commands shown below to manually clear the cache on a broker host.</p>
 <p><strong>Server used:</strong></p>
 
 <ul>
-<li>localhost</li>
+<li>client</li>
 </ul>
 
 <p><strong>Tools used:</strong></p>
@@ -475,7 +502,7 @@ Use the commands shown below to manually clear the cache on a broker host.</p>
 
 <p>With the repository in place, you can now install the OpenShift Enterprise client tools by running the following command:</p>
 
-<pre><code>$ sudo yum install rhc
+<pre><code># yum install rhc
 </code></pre>
 
 <p><strong>Lab 6 Complete!</strong></p>
@@ -487,7 +514,7 @@ Use the commands shown below to manually clear the cache on a broker host.</p>
 <p><strong>Server used:</strong></p>
 
 <ul>
-<li>localhost</li>
+<li>client</li>
 </ul>
 
 <p><strong>Tools used:</strong></p>
@@ -495,6 +522,20 @@ Use the commands shown below to manually clear the cache on a broker host.</p>
 <ul>
 <li>rhc</li>
 </ul>
+
+<h2><strong>Configuring DNS resolution on the client</strong></h2>
+
+<p>In order for your client machine to access your OpenShift Enterprise Broker, we need to modify the <em>/etc/resolv.conf</em> file located on the client machine.</p>
+
+<pre><code># vi /etc/resolv.conf
+</code></pre>
+
+<p>and add * 192.168.122.251* as the first entry.</p>
+
+<p>After modifying the <em>/etc/resolv.conf</em> file, you should be able to execute the following command and receive a successful response:</p>
+
+<pre><code># ping broker.example.com
+</code></pre>
 
 <h2><strong>Configuring RHC setup</strong></h2>
 
@@ -632,7 +673,7 @@ RESULT:
 Application firstphp was created.
 </code></pre>
 
-<p>If you completed all of the steps in lab 16 correctly, you should be able to verify that your application was created correctly by opening up a web browser and entering the following URL:</p>
+<p>If you completed all of the steps in the previous labs correctly, you should be able to verify that your application was created correctly by opening up a web browser on the client host and entering the following URL:</p>
 
 <pre><code>http://firstphp-ose.example.com
 </code></pre>
@@ -648,7 +689,7 @@ Application firstphp was created.
 
 <ul>
 <li>A request was made to the broker application host to create a new php application</li>
-<li>A message was dropped using MCollective and ActiveMQ to find a node host to handle the application creation request</li>
+<li>A message was broadcast using MCollective and ActiveMQ to find a node host to handle the application creation request</li>
 <li>A node host responded to the request and created an application / gear for you</li>
 <li>All SELinux and cgroup policies were enabled for your application gear</li>
 <li>A userid was created for your application gear</li>
@@ -939,7 +980,7 @@ $ git push
 <p><strong>Server used:</strong></p>
 
 <ul>
-<li>localhost</li>
+<li>client</li>
 <li>node host</li>
 </ul>
 
