@@ -14,6 +14,7 @@ Date:   May, 2013
 8. **Creating a PHP application**
 9. **Scaling an application**
 10. **Managing an application**
+11. **Using Quickstarts**
 
 
 
@@ -46,7 +47,7 @@ This manual will walk you through the process of installing and configuring an O
 
 The great thing about OpenShift Enterprise is that we are infrastructure agnostic. You can run OpenShift on bare metal, virtualized instances, or on public/private cloud instances. The only thing that is required is Red Hat Enterprise Linux as the underlying operating system. We require this in order to take advantage of SELinux and other enterprise features so that you can ensure your installation is rock solid and secure.
 
-What does this mean? This means that in order to take advantage of OpenShift Enterprise, you can use any existing resources that you have in your hardware pool today. It doesn’t matter if your infrastructure is based on EC2, VMware, RHEV, Rackspace, OpenStack, CloudStack, or even bare metal as we run on top of any Red Hat Enterprise Linux operating system as long as the architecture is x86_64.
+What does this mean? This means that in order to take advantage of OpenShift Enterprise, you can use any existing resources that you have in your hardware pool today. It does not matter if your infrastructure is based on EC2, VMware, RHEV, Rackspace, OpenStack, CloudStack, or even bare metal as we run on top of any Red Hat Enterprise Linux operating system as long as the architecture is x86_64.
 
 <!--BREAK-->
 
@@ -56,6 +57,7 @@ What does this mean? This means that in order to take advantage of OpenShift Ent
 
 * broker host
 * node host
+* client host
 
 **Tools used:**
 
@@ -89,37 +91,61 @@ The IP details for the VMs:
 
 ##**2.4 Install Broker host**
 
-Perform the following on the broker VM.
+**Note:  Perform the following on the broker host**
 
-After optionally viewing the openshift.sh script, view then execute the install_broker script
-# less openshift.sh
-# less install_broker
-# ./install_broker
+After optionally viewing the *openshift.sh* script, execute the install_broker script:
 
-While the script is executing watch for any errors.  The output of the openshift.sh has been logged. Review the log.
+	# less openshift.sh
+	# less install_broker
+	# ./install_broker
 
-# less openshift.install.broker.log
+While the script is executing watch for any errors.  The output of the *openshift.sh* has been logged to the *openshift.install.broker.log* file.  To view the contents of the log, enter the following command:
 
-When satisfied that all went as expect, reboot.  Else ask for assistance from the session leaders.
+	# less openshift.install.broker.log
 
-# reboot
+When satisfied that all went as expected, we can reboot the broker host. If you believe something did not go as expected, or you saw errors in the log, please inform the instructor.  To reboot the broker host, execute the following command:
+
+	# reboot
 
 ##**2.5 Install Node host**
 
-Perform the following on the broker VM.
+**Note:  Perform the following on the node host**
 
-After optionally viewing the openshift.sh script, view then execute the install_node script
-# less openshift.sh
-# less install_node
-# ./install_node
+After optionally viewing the *openshift.sh* script, execute the install_node script:
 
-While the script is executing watch for any errors.  The output of the openshift.sh has been logged. Review the log.
+	# less openshift.sh
+	# less install_node
+	# ./install_node
 
-# less openshift.install.node.log
+While the script is executing watch for any errors.  The output of the *openshift.sh* has been logged to the *openshift.install.node.log* file.  To view the contents of the log, enter the following command:
 
-When satisfied that all went as expect, reboot.  Else ask for assistance from the session leaders.
+	# less openshift.install.node.log
 
-# reboot
+When satisfied that all went as expected, we can reboot the broker host. If you believe something did not go as expected, or you saw errors in the log, please inform the instructor.  To reboot the broker host, execute the following command:
+
+	# reboot
+
+##**2.6 Verification of install**
+
+In order to verify the installation of the OpenShift Enterprise environment, we can use several tools to help us identify problems.  The first tool we will use is *mco ping* on the broker host which will confirm the node host is able to send and receive messages to the broker host.  
+
+**Note: Execute the following on the broker host**
+
+	# mco ping
+	
+The above command should return node.example.com.
+
+The second tool we will use is the **oo-accept** script.  We provide a script for both the broker and the node.
+
+**Note: Execute the following on the broker host**
+
+	# oo-accept-broker
+	
+**Note: Execute the following on the node host**
+
+	# oo-accept-node
+	
+If you see any errors from the above command, please notify one of the lab instructors.
 
 **Lab 2 Complete!**
 
@@ -184,8 +210,7 @@ If you are familiar with JSON, you will understand the format of this output.  W
 
 This will drop you into the mongo shell where you can perform commands against the database.  The first thing we need to do is let MongoDB know which database we want to use:
 
-	> show dbs
-	> use openshift_broker_dev
+	> use openshift_broke
 	
 To list all of the available collections in the *openshift_broker_dev* database, you can issue the following command:
  
@@ -193,7 +218,7 @@ To list all of the available collections in the *openshift_broker_dev* database,
 	
 You should see the following collections returned:
 
-	[ "district", "system.indexes", "system.users", "user" ]
+	[ "district", "system.indexes", "system.users"]
 	
 We can now query the *district* collection to verify the creation of our small district:
 
@@ -385,7 +410,7 @@ The only required cartridge is the openshift-origin-cartridge-cron-1.4 package.
 
 **Note:  If you are installing a multi-node configuration, it is important to remember that each node host *must* have the same cartridges installed.**
 
-For this lab, let’s also assume that we want to only allow scalable PHP applications that can connect to MySQL on our OpenShift Enterprise deployment.  Issue the following command to install the required cartridges:
+For this lab, assume that we want to only allow scalable PHP applications that can connect to MySQL on our OpenShift Enterprise deployment.  Issue the following command to install the required cartridges:
 
 **Note:  Execute the following on the node host.**
 
@@ -416,7 +441,7 @@ Use the commands shown below to manually clear the cache on a broker host.
 
 **Server used:**
 
-* client 
+* client host
 
 **Tools used:**
 
@@ -447,7 +472,7 @@ With the repository in place, you can now install the OpenShift Enterprise clien
 
 **Server used:**
 
-* client
+* client host
 
 **Tools used:**
 
@@ -539,13 +564,7 @@ This will provide you with the following output:
 
 ##**Create a new application**
 
-It is very easy to create an OpenShift Enterprise application using *rhc*. The command to create an application is *rhc app create* and it requires two mandatory arguments:
-
-* **Application Name (-a or --app)** : The name of the application. The application name can only contain alpha-numeric characters and at max contain only 32 characters.
-
-* **Type (-t or --type)**: The type is used to specify which language runtime to use.  
-
-Create a directory to hold your OpenShift Enterprise code projects:
+It is very easy to create an OpenShift Enterprise application using *rhc*. Create a directory to hold your OpenShift Enterprise code projects:
 
 	$ cd ~
 	$ mkdir ose
@@ -553,7 +572,7 @@ Create a directory to hold your OpenShift Enterprise code projects:
 	
 To create an application that uses the *php* runtime, issue the following command:
 
-	$ rhc app create -a firstphp -t php
+	$ rhc app create firstphp php-5.3
 	
 After entering that command, you should see the following output:
 
@@ -625,7 +644,7 @@ You will see output similar to the following:
 
 	e9e92282a16b49e7b78d69822ac53e1d
 	
-The above is the unique user id that was created for your application gear.  Lets examine the contents of this gear by using the following commands:
+The above is the unique user id that was created for your application gear.  Let us examine the contents of this gear by using the following commands:
 
 	# cd e9e92282a16b49e7b78d69822ac53e1d
 	# ls -al
@@ -753,7 +772,7 @@ The php directory is where all of the application code that the developer writes
 
 ##**Make a change to the PHP application and deploy updated code**
 
-To get a good understanding of the development workflow for a user, let’s change the contents of the *index.php* template that is provided on the newly created gear.  
+To get a good understanding of the development workflow for a user, change the contents of the *index.php* template that is provided on the newly created gear.  
 
 	$ cd ~/ose/firstphp/php
 	
@@ -810,7 +829,7 @@ Notice that we stop the application runtime (Apache), deploy the code, and then 
 
 ##**Verify code change**
 
-If you completed all of the steps in lab 16 correctly, you should be able to verify that your application was deployed correctly by opening up a web browser and entering the following URL:
+If you completed all of the steps in lab 8 correctly, you should be able to verify that your application was deployed correctly by opening up a web browser and entering the following URL:
 
 	http://firstphp-ose.example.com
 	
@@ -852,7 +871,7 @@ You should see the updated code for the application.
 
 **Server used:**
 
-* client
+* client host
 * node host
 
 **Tools used:**
@@ -879,7 +898,7 @@ The OpenShift Enterprise web console shows you how many gears are currently bein
 
 ##**Create a scaled application**
 
-In order to create a scaled application using the *rhc* command line tools, you need to specify the *-s* switch to the command.  Let’s create a scaled PHP application with the following command:
+In order to create a scaled application using the *rhc* command line tools, you need to specify the *-s* switch to the command. Create a scaled PHP application with the following command:
 
 	$ rhc app create scaledapp php-5.3 -s
 	
@@ -1029,7 +1048,7 @@ OpenShift Enterprise provides a dashboard that will give users relevant informat
 
 **Server used:**
 
-* rhc client host
+* client host
 * node host
 
 **Tools used:**
@@ -1346,3 +1365,39 @@ After running this command for a JBoss or Ruby application, you will be given a 
 
 **Lab 10 Complete!**
 <!--BREAK-->
+
+#**Lab 11: Using quickstarts (Estimated time: 10 minutes)**
+
+
+**Server used:**
+
+* client host
+
+**Tools used:**
+
+* rhc
+* git
+
+A key tenet when Red Hat was designing OpenShift Enterprise was the ability for developers to be able to run their source code and application as is, without having to use proprietary API(s).  To illustrate how easy it is for developers to get their existing application deployed on OpenShift Enterprise,  the team has created a github space where they provide numerous quick start projects that make deploying common open source applications to the platform a painless task.  Some of the popular open source projects the team provides a quick start for are:
+
+* Drupal
+* Review Board
+* Wordpress
+* Frog CMS
+* Sugar CRM
+* Redmine
+* MediaWiki
+
+##**Install a quickstart**
+
+Point your browser to the following URL:
+
+	http://www.github.com/openshift
+	
+Given the number of available quick starts, you may have to use the search functionality of your browser to locate the quick start that you would like to install.  For this lab, choose either the Wordpress or Drupal quick start and follow the instructions provided to install the application.
+
+![](http://training.runcloudrun.com/images/quickstart.png)
+
+**Lab 31 Complete!**
+<!--BREAK-->
+
