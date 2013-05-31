@@ -2,6 +2,9 @@ Title:  OpenShift Enterprise Summit - Lab Manual
 Author: Grant Shipley  
 Date:   May, 2013
 
+![](http://training.runcloudrun.com/images/OpenShift-summitlab-cover.png)
+<!--BREAK-->
+
 #**Contents**#
 
 1. **Overview of OpenShift Enterprise**
@@ -16,7 +19,7 @@ Date:   May, 2013
 10. **Managing an application**
 11. **Using Quickstarts**
 
-
+<!--BREAK-->
 
 #**Lab 1: Overview of OpenShift Enterprise**
 
@@ -63,8 +66,6 @@ What does this mean? This means that in order to take advantage of OpenShift Ent
 
 * pre positioned scripts (install_broker, install_node, openshift.sh)
 * virt-manager, ssh, gnome-term, ls, less
-
-#**Lab Environment**
 
 ##**2.1 Login to Workstation**
 
