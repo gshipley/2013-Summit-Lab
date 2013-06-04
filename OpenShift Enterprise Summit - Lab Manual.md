@@ -62,18 +62,27 @@ What does this mean? This means that in order to take advantage of OpenShift Ent
 
 **Tools used:**
 
-* pre positioned scripts (install_broker, install_node, openshift.sh)
-* virt-manager, ssh, gnome-term, ls, less
+* pre positioned scripts
+	*  install_broker
+	*  install_node
+	*  openshift.sh
+* virt-manager
+* ssh
+* terminal
+* ls
+* less
 
 ##**2.1 Login to Workstation**
 
-Workstation User: **lab4**
+Workstation Username: **lab4**
+
 Workstation Password: **lab4**
 
 ##**2.2 Start 3 VMs**
 Use _Virtual Machine Manager (virt-manager)_
 
 VM names:
+
 * ose-broker-working
 * ose-node-working
 * ose-client-working
@@ -146,6 +155,21 @@ The second tool we will use is the **oo-accept** script.  We provide a script fo
 	
 If you see any errors from the above command, please notify one of the lab instructors.
 
+##**2.7 Exploring OpenShift Enterprise**
+
+To get a better understanding of how OpenShift Enterprise works, it is suggested that the user views the following files:
+
+**Note: Execute the following on the broker host**
+
+	# cat /etc/openshift/broker.conf
+	# cat /etc/openshift/plugins.d/*
+	
+**Note: Execute the following on the node host**
+	
+	# ls /cgroup/all/openshift
+	# cat /etc/openshift/node.conf
+	# cat /etc/openshift/resource_limits.conf
+
 **Lab 2 Complete!**
 
 <!--BREAK-->
@@ -209,9 +233,9 @@ If you are familiar with JSON, you will understand the format of this output.  W
 
 This will drop you into the mongo shell where you can perform commands against the database.  The first thing we need to do is let MongoDB know which database we want to use:
 
-	> use openshift_broke
+	> use openshift_broker
 	
-To list all of the available collections in the *openshift_broker_dev* database, you can issue the following command:
+To list all of the available collections in the *openshift_broker* database, you can issue the following command:
  
 	> db.getCollectionNames()
 	
@@ -221,9 +245,9 @@ You should see the following collections returned:
 	
 We can now query the *district* collection to verify the creation of our small district:
 
-	> db.district.find()
+	> db.disctrict.find( {}, {available_uids: 0} )
 	
-The output should be:
+The output should be similar to the following:
 
 	{ "_id" : "513b50508f9f44aeb90090f19d2fd940", "name" : "small_district", "externally_reserved_uids_size" : 0, 
 	"active_server_identities_size" : 0, "node_profile" : "small", "max_uid" : 6999, "creation_time" : 
@@ -236,7 +260,11 @@ Exit the Mongo shell by using the exit command:
 
 	> exit
 
-Now we can add our node host, node.example.com, to the *small_district* that we created above:
+Now we can add our node host, node.example.com, to the *small_district* that we created above.  To verify the node is configured for small gears, view the */etc/openshift/resource_limits.conf* file and make a note of what *node_profile* is configured as:
+	
+	# less /etc/openshift/resource_limits.conf
+	
+To add our node to the small district, enter the following command:
 
 	# oo-admin-ctl-district -c add-node -n small_district -i node.example.com
 	
@@ -413,7 +441,8 @@ For this lab, assume that we want to only allow scalable PHP applications that c
 
 **Note:  Execute the following on the node host.**
 
-	# yum install openshift-origin-cartridge-php-5.3 openshift-origin-cartridge-mysql-5.1
+	# yum install openshift-origin-cartridge-php-5.3 
+	# yum install openshift-origin-cartridge-mysql-5.1
 
 For a complete list of all cartridges that you are entitled to install,  you can perform a search using the yum command that will output all OpenShift Enterprise cartridges.
 
@@ -496,7 +525,7 @@ By default, the RHC command line tool will default to use the publicly hosted Op
 
 	$ rhc setup --server broker.example.com
 	
-Once you enter in that command, you will be prompted for the username that you would like to authenticate with.  For this workshop, use the *demo* user account that we created in a previous lab.  After providing the username that you would like to connect with, you will be prompted for the password of the user account.
+Once you enter in that command, you will be prompted for the username that you would like to authenticate with.  For this workshop, use the *demo* user account that has already been created.  After providing the username that you would like to connect with, you will be prompted for the password of the user account.
 
 The next step in the setup process is to create and upload our SSH key to the broker server.  This is required for pushing your source code, via git, up to the OpenShift Enterprise server.
 
@@ -531,45 +560,43 @@ This information will be provided to the *rhc* command line tool for every futur
 
 * rhc
 
-In this lab, we are ready to start using OpenShift Enterprise to create our first application.  To create an application, we will be using the *rhc app* command.  In order to view all of the swtiches available for the *rhc app* command, enter the following command:
+In this lab, we are ready to start using OpenShift Enterprise to create our first application.  To create an application, we will be using the *rhc app* command.  In order to view all of the switches available for the *rhc app* command, enter the following command:
+
+**Note:  Execute the following on the client host.**
 
 	$ rhc app -h
 	
 This will provide you with the following output:
 
+	Usage: rhc app <action>
+
+	Creates and controls an OpenShift application.  To see the list of all applications use the rhc domain show command.  Note that delete is not reversible and will stop your application and then remove the application and repo from the remote server. 		No local changes are made.
+
 	List of Actions
- 	create             Create an application and adds it to a domain
-  	git-clone          Clone and configure an application's repository locally
-  	delete             Delete an application from the server
-  	start              Start the application
-  	stop               Stop the application
-  	force-stop         Stops all application processes
-  	restart            Restart the application
-  	reload             Reload the application's configuration
-  	tidy               Clean out the application's logs and tmp directories and tidy up the git repo on the server
-  	show               Show information about an application
-  	status             Show status of an application's gears
-
-	Global Options
-  	-l, --rhlogin login       OpenShift login
-  	-p, --password password   OpenShift password
-  	-d, --debug               Turn on debugging
-  	--timeout seconds         Set the timeout in seconds for network commands
-  	--noprompt                Suppress the interactive setup wizard from running before a command
-  	--config FILE             Path of a different config file
-  	-h, --help                Display help documentation
-  	-v, --version             Display version information
-
+ 	create             Create an application
+ 	force-stop         Stops all application processes
+ 	start              Start the application
+ 	restart            Restart the application
+ 	status             DEPRECATED use 'show <app> --state' instead
+ 	delete             Delete an application from the server
+ 	reload             Reload the application's configuration
+ 	show               Show information about an application
+ 	stop               Stop the application
+ 	tidy               Clean out the application's logs and tmp directories and tidy up the git repo on the server
 
 ##**Create a new application**
 
 It is very easy to create an OpenShift Enterprise application using *rhc*. Create a directory to hold your OpenShift Enterprise code projects:
+
+**Note:  Execute the following on the client host.**
 
 	$ cd ~
 	$ mkdir ose
 	$ cd ose
 	
 To create an application that uses the *php* runtime, issue the following command:
+
+**Note:  Execute the following on the client host.**
 
 	$ rhc app create firstphp php-5.3
 	
@@ -636,6 +663,8 @@ After you entered the command to create a new PHP application, a lot of things h
 	
 It is important to understand the directory structure of each OpenShift Enterprise application gear.  For the PHP application that we just created, we can verify and examine the layout of the gear on the node host.  SSH to your node host and execute the following commands:
 
+**Note:  Execute the following on the node host.**
+
 	# cd /var/lib/openshift
 	# ls
 	
@@ -678,13 +707,17 @@ You will also notice the following three directories:
 
 For a more human readable format, you can execute the following command on the node host:
 
+**Note:  Execute the following on the node host.**
+
 	$ cd /var/lib/openshift/.httpd.d
 	$ ls
 	
 	
-##**Understanding directory structure on the localhost**
+##**Understanding directory structure on the client host**
 
-When you created the PHP application using the *rhc app create* command, the private git repository that was created on your node host was cloned to your local machine.
+When you created the PHP application using the *rhc app create* command, the private git repository that was created on your node host was cloned to your client machine.
+
+**Note:  Execute the following on the client host.** 
 
 	$ cd firstphp
 	$ ls -al
@@ -717,7 +750,6 @@ You should see the following information which specifies the URL for our reposit
 		filemode = true
 		bare = false
 		logallrefupdates = true
-		ignorecase = true
 	[remote "origin"]
 		fetch = +refs/heads/*:refs/remotes/origin/*
 		url = ssh://e9e92282a16b49e7b78d69822ac53e1d@firstphp-ose.example.com/~/git/firstphp.git/
@@ -899,6 +931,9 @@ The OpenShift Enterprise web console shows you how many gears are currently bein
 
 In order to create a scaled application using the *rhc* command line tools, you need to specify the *-s* switch to the command. Create a scaled PHP application with the following command:
 
+**Note:  Execute the following on the client host.**
+
+	$ cd ~/ose
 	$ rhc app create scaledapp php-5.3 -s
 	
 After executing the above command, you should see output that specifies that you are using both the PHP and HAProxy cartridges:
@@ -941,14 +976,6 @@ After executing the above command, you should see output that specifies that you
 	RESULT:
 	Application scaledapp was created.
 	
-
-![](http://training.runcloudrun.com/images/scaledApp.png)
-
-##**Setting the scaling strategy**
-
-OpenShift Enterprise allows users the ability to set the minimum and maximum numbers of gears that an application can use to handle increased HTTP traffic.  This scaling strategy is exposed via the web console.  While on the application details screen, click the *Scaled up with HAProxy x2* button to change the default scaling rules.
-
-![](http://training.runcloudrun.com/images/scaledApp2.png)
 
 ##**Manual scaling**
 
@@ -1330,24 +1357,24 @@ If the restore process worked correctly, you should see the restored application
 
 You can delete an OpenShift Enterprise application by executing the *rhc app delete* command. This command deletes your application and all of its data on the OpenShift Enterprise server but leaves your local directory intact. This operation can not be undone so use it with caution. 
 
-	$ rhc app delete -a someAppToDelete
+	$ rhc app delete -a firstphp
 	
-	Are you sure you wish to delete the ‘someAppToDelete’ application? (yes/no)
+	Are you sure you wish to delete the ‘firstphp’ application? (yes/no)
 	yes 
 	
-	Deleting application ‘someAppToDelete’
+	Deleting application ‘firstphp’
 	
 	RESULT:
-	Application ‘someAppToDelete’ successfully deleted
+	Application ‘firstphp’ successfully deleted
 
-There is another variant of this command which does not require the user to confirm the delete opeartion.  To use this variant, pass the *--confirm* flag.
+There is another variant of this command which does not require the user to confirm the delete operation.  To use this variant, pass the *--confirm* flag.
 
-	$ rhc app delete --confirm -a someAppToDelete
+	$ rhc app delete --confirm -a firstphp
 	
-	Deleting application 'someAppToDelete'
+	Deleting application ‘firstphp’
 	
 	RESULT:
-	Application 'someAppToDelete' successfully deleted
+	Application ‘firstphp’ successfully deleted
 
 
 ##**Viewing a thread dump of an application**
