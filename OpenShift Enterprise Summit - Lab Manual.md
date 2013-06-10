@@ -8,10 +8,10 @@ Date:   May, 2013
 1. **Overview of OpenShift Enterprise**
 2. **Installing OpenShift Enterprise**
 3. **Adding Districts**
-4.  **Managing Resources**
-5.  **Adding Cartridges**
-6. **Installing the RHC client tools**
-7. **Using *rhc setup***
+4. **Installing the RHC client tools**
+5. **Using *rhc setup***
+6.  **Managing Resources**
+7. **Adding Cartridges**
 8. **Creating a PHP application**
 9. **Scaling an application**
 10. **Managing an application**
@@ -147,11 +147,12 @@ The second tool we will use is the **oo-accept** script.  We provide a script fo
 
 **Note: Execute the following on the broker host**
 
-	# oo-accept-broker
+	# oo-accept-broker -v
+	# oo-accept-systems -v
 	
 **Note: Execute the following on the node host**
 
-	# oo-accept-node
+	# oo-accept-node -v
 	
 If you see any errors from the above command, please notify one of the lab instructors.
 
@@ -231,9 +232,7 @@ If you are familiar with JSON, you will understand the format of this output.  W
 
 	# mongo openshift_broker -uopenshift -pmongopass
 
-This will drop you into the mongo shell where you can perform commands against the database.  The first thing we need to do is let MongoDB know which database we want to use:
-
-	> use openshift_broker
+This will drop you into the mongo shell where you can perform commands against the database.  
 	
 To list all of the available collections in the *openshift_broker* database, you can issue the following command:
  
@@ -262,9 +261,13 @@ Exit the Mongo shell by using the exit command:
 
 Now we can add our node host, node.example.com, to the *small_district* that we created above.  To verify the node is configured for small gears, view the */etc/openshift/resource_limits.conf* file and make a note of what *node_profile* is configured as:
 	
+**Note: Execute the following on the node host.**
+
 	# less /etc/openshift/resource_limits.conf
 	
 To add our node to the small district, enter the following command:
+
+**Note: Execute the following on the broker host.**
 
 	# oo-admin-ctl-district -c add-node -n small_district -i node.example.com
 	
@@ -304,7 +307,93 @@ Districts and node hosts have a configured capacity for the number of gears allo
 	 
 **Lab 3 Complete!**
 <!--BREAK-->
-#**Lab 4: Managing resources**
+#**Lab 4: Installing the RHC client tools**
+
+**Server used:**
+
+* client host
+
+**Tools used:**
+
+* ruby
+* sudo
+* git
+* yum
+* gem
+* rhc
+
+The OpenShift Client tools, known as **rhc**, are built and packaged using the Ruby programming language.  OpenShift Enterprise integrates with the Git version control system to provide powerful, decentralized version control for your application source code.
+
+OpenShift Enterprise client tools can be installed on any operating system with Ruby 1.8.7 or higher.
+
+##**Red Hat Enterprise Linux 6.2, 6.3 or 6.4**
+
+The most recent version of the OpenShift Enterprise client tools are available as a RPM from the OpenShift Enterprise hosted YUM repository. We recommend this version to remain up to date, although a version of the OpenShift Enterprise client tools RPM is also available through EPEL.
+
+With the repository in place, you can now install the OpenShift Enterprise client tools by running the following command:
+
+	# yum install rhc
+
+**Lab 4 Complete!**
+
+<!--BREAK-->
+
+#**Lab 5: Using *rhc setup***
+
+**Server used:**
+
+* client host
+
+**Tools used:**
+
+* rhc
+
+##**Configuring DNS resolution on the client**
+
+In order for your client machine to access your OpenShift Enterprise Broker, we need to modify the */etc/resolv.conf* file located on the client machine.
+
+	# vi /etc/resolv.conf
+	
+and add * 192.168.122.251* as the first entry.
+
+After modifying the */etc/resolv.conf* file, you should be able to execute the following command and receive a successful response:
+
+	# ping broker.example.com
+	
+
+##**Configuring RHC setup**
+
+By default, the RHC command line tool will default to use the publicly hosted OpenShift environment.  Since we are using our own enterprise environment, we need to tell *rhc* to use our broker.example.com server instead of openshift.com.  In order to accomplish this, run the *rhc setup* command:
+
+	$ rhc setup --server broker.example.com
+	
+Once you enter in that command, you will be prompted for the username that you would like to authenticate with.  For this workshop, use the *demo* user account that has already been created.  After providing the username that you would like to connect with, you will be prompted for the password of the user account.
+
+The next step in the setup process is to create and upload our SSH key to the broker server.  This is required for pushing your source code, via git, up to the OpenShift Enterprise server.
+
+Finally, you will be asked to create a namespace for the provided user account.  The namespace is a unique name which becomes part of your application URL. It is also commonly referred to as the users domain. The namespace can be at most 16 characters long and can only contain alphanumeric characters. There is currently a 1:1 relationship between usernames and namespaces.  For this lab, create the following namespace:
+
+	ose
+
+##**Under the covers**
+
+The *rhc setup* tool is a convenient command line utility to ensure that the user’s operating system is configured properly to create and manage applications from the command line.  After this command has been executed, a *.openshift* directory was created in the users home directory with some basic configuration items specified in the *express.conf* file.  The contents of that file are as follows:
+
+	# Default user login
+	default_rhlogin=‘demo’
+
+	# Server API
+	libra_server = 'broker.example.com'
+	
+This information will be provided to the *rhc* command line tool for every future command that is issued.  If you want to run commands as a different user than the one listed above, you can either change the default login in this file or provide the *-l* switch to the *rhc* command.
+
+
+**Lab 5 Complete!**
+
+<!--BREAK-->
+
+
+#**Lab 6: Managing resources**
 
 **Server used:**
 
@@ -392,10 +481,10 @@ In order to remove the ability for a user to create a specific gear size, you ca
 	# oo-admin-ctl-user -l demo --removegearsize medium
 	
 	
-**Lab 4 Complete!**
+**Lab 6 Complete!**
 <!--BREAK-->
 
-#**Lab 5: Adding Cartridges**
+#**Lab 7: Adding Cartridges**
 
 **Server used:**
 
@@ -404,10 +493,7 @@ In order to remove the ability for a user to create a specific gear size, you ca
 
 **Tools used:**
 
-* text editor
 * yum
-* lokkit
-* chkconfig
 
 ##**Installing cartridges that the node host will support**
 
@@ -435,6 +521,12 @@ For database and other system related functionality, OpenShift Enterprise provid
 
 The only required cartridge is the openshift-origin-cartridge-cron-1.4 package.
 
+For a complete list of all cartridges that you are entitled to install,  you can perform a search using the yum command that will output all OpenShift Enterprise cartridges.
+
+**Note:  Execute the following on the node host.**
+
+	# yum search origin-cartridge
+
 **Note:  If you are installing a multi-node configuration, it is important to remember that each node host *must* have the same cartridges installed.**
 
 For this lab, assume that we want to only allow scalable PHP applications that can connect to MySQL on our OpenShift Enterprise deployment.  Issue the following command to install the required cartridges:
@@ -444,15 +536,18 @@ For this lab, assume that we want to only allow scalable PHP applications that c
 	# yum install openshift-origin-cartridge-php-5.3 
 	# yum install openshift-origin-cartridge-mysql-5.1
 
-For a complete list of all cartridges that you are entitled to install,  you can perform a search using the yum command that will output all OpenShift Enterprise cartridges.
-
-**Note:  Execute the following on the node host.**
-
-	# yum search origin-cartridge
 	
 ##**Clearing the cartridge cache**
 
-If a newly installed cartridge is not immediately available, it may be due to an outdated, cached cartridge list. The first time the REST API is accessed, the broker host uses MCollective to retrieve the list of available cartridges from a node host. By default, this list is cached for six hours in a production environment. If the installed cartridges are modified, the cache must be cleared either manually or by waiting until the cache expires before developers can access the updated list.
+If a newly installed cartridge is not immediately available, it may be due to an outdated, cached cartridge list. The first time the REST API is accessed, the broker host uses MCollective to retrieve the list of available cartridges from a node host. By default, this list is cached for six hours in a production environment. If the installed cartridges are modified, the cache must be cleared either manually or by waiting until the cache expires before developers can access the updated list.  
+
+To check the currently available cartridges, you can use the following command line utility:
+
+**Note:  Execute the following on the client host.**
+
+	$ rhc cartridge list
+
+
 Use the commands shown below to manually clear the cache on a broker host.
 
 **Note:  Execute the following on the broker host.**
@@ -460,100 +555,17 @@ Use the commands shown below to manually clear the cache on a broker host.
 	# cd /var/www/openshift/broker
 	# bundle exec rake tmp:clear
 
-**Lab 5 Complete!**
-<!--BREAK-->
-
-
-
-#**Lab 6: Installing the RHC client tools**
-
-**Server used:**
-
-* client host
-
-**Tools used:**
-
-* ruby
-* sudo
-* git
-* yum
-* gem
-* rhc
-
-The OpenShift Client tools, known as **rhc**, are built and packaged using the Ruby programming language.  OpenShift Enterprise integrates with the Git version control system to provide powerful, decentralized version control for your application source code.
-
-OpenShift Enterprise client tools can be installed on any operating system with Ruby 1.8.7 or higher.
-
-##**Red Hat Enterprise Linux 6.2, 6.3 or 6.4**
-
-The most recent version of the OpenShift Enterprise client tools are available as a RPM from the OpenShift Enterprise hosted YUM repository. We recommend this version to remain up to date, although a version of the OpenShift Enterprise client tools RPM is also available through EPEL.
-
-With the repository in place, you can now install the OpenShift Enterprise client tools by running the following command:
-
-	# yum install rhc
-
-**Lab 6 Complete!**
-
-<!--BREAK-->
-
-#**Lab 7: Using *rhc setup***
-
-**Server used:**
-
-* client host
-
-**Tools used:**
-
-* rhc
-
-##**Configuring DNS resolution on the client**
-
-In order for your client machine to access your OpenShift Enterprise Broker, we need to modify the */etc/resolv.conf* file located on the client machine.
-
-	# vi /etc/resolv.conf
-	
-and add * 192.168.122.251* as the first entry.
-
-After modifying the */etc/resolv.conf* file, you should be able to execute the following command and receive a successful response:
-
-	# ping broker.example.com
-	
-
-##**Configuring RHC setup**
-
-By default, the RHC command line tool will default to use the publicly hosted OpenShift environment.  Since we are using our own enterprise environment, we need to tell *rhc* to use our broker.example.com server instead of openshift.com.  In order to accomplish this, run the *rhc setup* command:
-
-	$ rhc setup --server broker.example.com
-	
-Once you enter in that command, you will be prompted for the username that you would like to authenticate with.  For this workshop, use the *demo* user account that has already been created.  After providing the username that you would like to connect with, you will be prompted for the password of the user account.
-
-The next step in the setup process is to create and upload our SSH key to the broker server.  This is required for pushing your source code, via git, up to the OpenShift Enterprise server.
-
-Finally, you will be asked to create a namespace for the provided user account.  The namespace is a unique name which becomes part of your application URL. It is also commonly referred to as the users domain. The namespace can be at most 16 characters long and can only contain alphanumeric characters. There is currently a 1:1 relationship between usernames and namespaces.  For this lab, create the following namespace:
-
-	ose
-
-##**Under the covers**
-
-The *rhc setup* tool is a convenient command line utility to ensure that the user’s operating system is configured properly to create and manage applications from the command line.  After this command has been executed, a *.openshift* directory was created in the users home directory with some basic configuration items specified in the *express.conf* file.  The contents of that file are as follows:
-
-	# Default user login
-	default_rhlogin=‘demo’
-
-	# Server API
-	libra_server = 'broker.example.com'
-	
-This information will be provided to the *rhc* command line tool for every future command that is issued.  If you want to run commands as a different user than the one listed above, you can either change the default login in this file or provide the *-l* switch to the *rhc* command.
-
-
 **Lab 7 Complete!**
+<!--BREAK-->
+
+
 
 <!--BREAK-->
 #**Lab 8: Creating a PHP application**
 
 **Server used:**
 
-* localhost
+* client host
 * node host
 
 **Tools used:**
@@ -805,6 +817,8 @@ The php directory is where all of the application code that the developer writes
 
 To get a good understanding of the development workflow for a user, change the contents of the *index.php* template that is provided on the newly created gear.  
 
+**Note:  Execute the following on the client host.**
+
 	$ cd ~/ose/firstphp/php
 	
 Edit the file and look for the following code block:
@@ -988,6 +1002,7 @@ OpenShift Enterprise supports this workflow by allowing users to manually add an
 
 From your locally cloned Git repository, create a *disable autoscaling* marker, as shown in the example below:
 	
+	$ cd scaledapp
 	$ touch .openshift/markers/disable_auto_scaling
 	$ git add .
 	$ git commit -am “remove automatic scaling”
@@ -1005,7 +1020,7 @@ Once you have have been authenticated to your application gear, you can add a ne
 	 
 In this lab, the application name is *scaledapp*, the application UUID is the username that you used to SSH to the node host, and the domain name is *ose*.  Given that information, your command should looking similar to the following:
 
-	[scaledapp-ose.example.com ~]\> add-gear -a scaledapp -u 1a6d471841d84e8aaf25222c4cdac278 -n ose
+	[scaledapp-ose.example.com ~]\> add-gear -a scaledapp -n ose  -u 1a6d471841d84e8aaf25222c4cdac278
 	
 Verify that your new gear was added to the application by running the *rhc app show* command or by looking at the application details on the web console:
 
@@ -1030,8 +1045,6 @@ After executing this command, you should see the application is now using three 
 	  ============
 	    Scaled x3 (minimum: 2, maximum: available gears) with haproxy-1.4 on small gears
 	    
-	  
-![](http://training.runcloudrun.com/images/scaledApp3.png)
 
 Just as we scaled up with the *add-gear* command, we can manually scale down with the *remove-gear* command.  Remove the third gear from your application with the following command making sure to substitute the correct application UUID:
 
@@ -1186,7 +1199,11 @@ OpenShift allows remote access to the application gear by using the Secure Shell
 * Performing Git operations
 * Remote access your application gear
 
-The SSH keys were generated and uploaded to OpenShift Enterprise by rhc setup command we executed in a previous lab. You can verify that SSH keys are uploaded by logging into the OpenShift Enterprise web console and clicking on the "My Account" tab as shown below.
+The SSH keys were generated and uploaded to OpenShift Enterprise by rhc setup command we executed in a previous lab. You can verify that SSH keys are uploaded by logging into the OpenShift Enterprise web console and clicking on the "My Account" tab as shown below.  For this lab, to login to the web console, open a browser and enter the following URL:
+
+	http://broker.example.com
+	
+and authenticate using the *demo* user account.
 
 ![](http://training.runcloudrun.com/images/sshkeys.png)
 
@@ -1288,6 +1305,9 @@ You should see information for both the access and error logs.  While you have t
 	10.10.56.204 - - [22/Jan/2013:18:39:27 -0500] "GET / HTTP/1.1" 200 5242 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:19.0) Gecko/20100101 Firefox/19.0"
 
 The log files are also available on the gear node host in the *php-5.3/logs* directory.
+
+**Note:  To exit the *tail* command, use Ctrl-C**
+
 
 ##**Viewing disk quota for an application**
 
